@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/ghjm/advent2022/pkg/utils"
+	"os"
 )
 
 var scores = map[string]int{
@@ -32,7 +33,7 @@ var encScores = map[string]string{
 func main() {
 	totalScore1 := 0
 	totalScore2 := 0
-	utils.OpenAndReadAll("input2.txt", func(s string) error {
+	err := utils.OpenAndReadAll("input2.txt", func(s string) error {
 		score, ok := scores[s]
 		if !ok {
 			return fmt.Errorf("not found in scores: %s", s)
@@ -49,6 +50,10 @@ func main() {
 		totalScore2 += score
 		return nil
 	})
+	if err != nil {
+		fmt.Printf("Error: %s\n", err)
+		os.Exit(1)
+	}
 	fmt.Printf("Part 1: %d\n", totalScore1)
 	fmt.Printf("Part 2: %d\n", totalScore2)
 }
