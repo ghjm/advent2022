@@ -12,7 +12,7 @@ func run() error {
 	var initMap []string
 	var moves []string
 	inInit := true
-	err := utils.OpenAndReadAll("input5.txt", func(s string) error {
+	err := utils.OpenAndReadLines("input5.txt", func(s string) error {
 		if s == "" {
 			inInit = false
 		} else if inInit {

@@ -10,7 +10,7 @@ import (
 
 func readCals() ([][]int, error) {
 	elves := [][]int{{}}
-	err := utils.OpenAndReadAll("input1.txt", func(s string) error {
+	err := utils.OpenAndReadLines("input1.txt", func(s string) error {
 		if s == "" {
 			elves = append(elves, []int{})
 		} else {

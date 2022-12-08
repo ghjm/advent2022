@@ -60,7 +60,7 @@ func part2(elves []string) (int, error) {
 
 func main() {
 	var elves []string
-	err := utils.OpenAndReadAll("input3.txt", func(s string) error {
+	err := utils.OpenAndReadLines("input3.txt", func(s string) error {
 		elves = append(elves, s)
 		return nil
 	})

@@ -7,7 +7,7 @@ import (
 )
 
 func run() error {
-	matches, err := utils.OpenAndReadAllRegex("input4.txt", `^(\d+)-(\d+),(\d+)-(\d+)$`, true)
+	matches, err := utils.OpenAndReadRegex("input4.txt", `^(\d+)-(\d+),(\d+)-(\d+)$`, true)
 	if err != nil {
 		return err
 	}

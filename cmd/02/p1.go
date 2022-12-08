@@ -33,7 +33,7 @@ var encScores = map[string]string{
 func main() {
 	totalScore1 := 0
 	totalScore2 := 0
-	err := utils.OpenAndReadAll("input2.txt", func(s string) error {
+	err := utils.OpenAndReadLines("input2.txt", func(s string) error {
 		score, ok := scores[s]
 		if !ok {
 			return fmt.Errorf("not found in scores: %s", s)

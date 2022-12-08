@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"os"
 	"regexp"
 	"strconv"
@@ -11,8 +12,9 @@ import (
 
 type InputFileReader interface {
 	io.ReadCloser
+	ReadAll() ([]byte, error)
 	ReadLine() (line []byte, isPrefix bool, err error)
-	ReadAll(callback func(string) error) error
+	ReadLines(callback func(string) error) error
 }
 
 type inputFileReader struct {
@@ -33,12 +35,28 @@ func OpenInputFile(name string) (InputFileReader, error) {
 	return &ifr, nil
 }
 
-func OpenAndReadAll(name string, callback func(string) error) error {
+func OpenAndReadAll(name string) ([]byte, error) {
+	ifr, err := OpenInputFile(name)
+	if err != nil {
+		return nil, err
+	}
+	data, err := ifr.ReadAll()
+	if err != nil {
+		return nil, err
+	}
+	err = ifr.Close()
+	if err != nil {
+		return nil, err
+	}
+	return data, nil
+}
+
+func OpenAndReadLines(name string, callback func(string) error) error {
 	ifr, err := OpenInputFile(name)
 	if err != nil {
 		return err
 	}
-	err = ifr.ReadAll(callback)
+	err = ifr.ReadLines(callback)
 	if err != nil {
 		return err
 	}
@@ -49,13 +67,13 @@ func OpenAndReadAll(name string, callback func(string) error) error {
 	return nil
 }
 
-func OpenAndReadAllRegex(name string, regex string, allMustMatch bool) ([][]string, error) {
+func OpenAndReadRegex(name string, regex string, allMustMatch bool) ([][]string, error) {
 	re, err := regexp.Compile(regex)
 	if err != nil {
 		return nil, err
 	}
 	var results [][]string
-	err = OpenAndReadAll(name, func(s string) error {
+	err = OpenAndReadLines(name, func(s string) error {
 		m := re.FindStringSubmatch(s)
 		if m == nil {
 			if allMustMatch {
@@ -99,7 +117,11 @@ func (ifr *inputFileReader) ReadLine() (line []byte, isPrefix bool, err error) {
 	return ifr.bufreader.ReadLine()
 }
 
-func (ifr *inputFileReader) ReadAll(callback func(string) error) error {
+func (ifr *inputFileReader) ReadAll() ([]byte, error) {
+	return ioutil.ReadAll(ifr.file)
+}
+
+func (ifr *inputFileReader) ReadLines(callback func(string) error) error {
 	scanner := bufio.NewScanner(ifr.file)
 	var err error
 	for scanner.Scan() {
