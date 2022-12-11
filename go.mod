@@ -2,7 +2,10 @@ module github.com/ghjm/advent2022
 
 go 1.18
 
-require github.com/zyedidia/generic v1.2.0
+require (
+	github.com/Knetic/govaluate v3.0.0+incompatible
+	github.com/zyedidia/generic v1.2.0
+)
 
 require (
 	github.com/segmentio/fasthash v1.0.3 // indirect
