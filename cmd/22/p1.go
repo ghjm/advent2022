@@ -73,81 +73,69 @@ func (p point) cubeFace() point {
 	return point{p.x / 50, p.y / 50}
 }
 
-func moveToFace(loc point, newFace point, dir byte, rot byte) point {
-	switch rot {
-	case 0: // N
-		switch dir {
-		case 0: // R
-		case 1: // D
-		case 2: // L
-		case 3: // U
-		}
-	case 1: // R
-		switch dir {
-		case 0: // R
-		case 1: // D
-		case 2: // L
-		case 3: // U
-		}
-	case 2: // F
-		switch dir {
-		case 0: // R
-		case 1: // D
-		case 2: // L
-		case 3: // U
-		}
-	case 3: // L
-		switch dir {
-		case 0: // R
-		case 1: // D
-		case 2: // L
-		case 3: // U
-		}
-	}
-	return point{}
-}
-
-func (d *data) move(loc point, dir point, cube bool) (point, byte) {
-	res := point{loc.x, loc.y}
-	var netRotation byte
-	for {
-		if cube {
-			oldFace := res.cubeFace()
-			newRes := point{res.x + dir.x, res.y + dir.y}
-			newFace := res.cubeFace()
-			if oldFace != newFace {
-				var move byte
-				switch {
-				case dir.x == 1:
-					move = 0
-				case dir.x == -1:
-					move = 1
-				case dir.y == 1:
-					move = 2
-				case dir.y == -1:
-					move = 3
-				}
-				newInfo, ok := cubeFaces[cubeFaceInfo{oldFace, "RDLU"[move]}]
-				if !ok {
-					panic("invalid cube face move")
-				}
-				var rot byte
-				switch newInfo.rot {
-				case 'N':
-					rot = 0
-				case 'F':
-					rot = 2
-				case 'R':
-					rot = 1
-				case 'L':
-					rot = 3
-				}
-				newDir := (move + rot) % 4
-				dir = directions[newDir]
-				netRotation = (netRotation + rot) % 4
+func (d *data) move(loc point, facing int, cube bool) (point, int) {
+	dir := directions[facing]
+	if cube {
+		oldFace := loc.cubeFace()
+		naiveNewLoc := point{loc.x + dir.x, loc.y + dir.y}
+		naiveNewFace := naiveNewLoc.cubeFace()
+		if oldFace != naiveNewFace {
+			newInfo, ok := cubeFaces[cubeFaceInfo{oldFace, "RDLU"[facing]}]
+			if !ok {
+				panic("invalid cube face move")
 			}
-			res = newRes
+			switch newInfo.rot {
+			case 'N':
+				switch facing {
+				case 0: // R
+					return point{newInfo.face.x*50 + 49, newInfo.face.y*50 + loc.y%50}, facing
+				case 1: // D
+					return point{newInfo.face.x*50 + loc.x%50, newInfo.face.y * 50}, facing
+				case 2: // L
+					return point{newInfo.face.x * 50, newInfo.face.y*50 + loc.y%50}, facing
+				case 3: // U
+					return point{newInfo.face.x*50 + loc.x%50, newInfo.face.y*50 + 49}, facing
+				}
+			case 'F':
+				switch facing {
+				case 0: // R
+					return point{newInfo.face.x * 50, newInfo.face.y*50 + loc.y%50}, (facing + 2) % 4
+				case 1: // D
+					return point{newInfo.face.x*50 + loc.x%50, newInfo.face.y*50 + 49}, (facing + 2) % 4
+				case 2: // L
+					return point{newInfo.face.x*50 + 49, newInfo.face.y*50 + loc.y%50}, (facing + 2) % 4
+				case 3: // U
+					return point{newInfo.face.x*50 + loc.x%50, newInfo.face.y * 50}, (facing + 2) % 4
+				}
+			case 'R':
+				switch facing {
+				case 0: // R
+					return point{newInfo.face.x*50 + loc.x%50, newInfo.face.y*50 + 49}, (facing + 1) % 4
+				case 1: // D
+					return point{newInfo.face.x*50 + 49, newInfo.face.y*50 + loc.y%50}, (facing + 1) % 4
+				case 2: // L
+					return point{newInfo.face.x*50 + loc.x%50, newInfo.face.y * 50}, (facing + 1) % 4
+				case 3: // U
+					return point{newInfo.face.x * 50, newInfo.face.y*50 + loc.y%50}, (facing + 1) % 4
+				}
+			case 'L':
+				switch facing {
+				case 0: // R
+					return point{newInfo.face.x*50 + loc.x%50, newInfo.face.y * 50}, (facing + 3) % 4
+				case 1: // D
+					return point{newInfo.face.x * 50, newInfo.face.y*50 + loc.y%50}, (facing + 3) % 4
+				case 2: // L
+					return point{newInfo.face.x*50 + loc.x%50, newInfo.face.y*50 + 49}, (facing + 3) % 4
+				case 3: // U
+					return point{newInfo.face.x*50 + loc.x%50, newInfo.face.y * 50}, (facing + 3) % 4
+				}
+			}
 		} else {
+			return naiveNewLoc, facing
+		}
+	} else {
+		res := point{loc.x, loc.y}
+		for {
 			res.x += dir.x
 			res.y += dir.y
 			if dir.y != 0 {
@@ -166,11 +154,12 @@ func (d *data) move(loc point, dir point, cube bool) (point, byte) {
 					res.x = len(d.board[res.y]) - 1
 				}
 			}
-		}
-		if d.valueAt(res) != ' ' {
-			return res, netRotation
+			if d.valueAt(res) != ' ' {
+				return res, 0
+			}
 		}
 	}
+	panic("no move")
 }
 
 type sim struct {
@@ -181,12 +170,13 @@ type sim struct {
 }
 
 func (s *sim) step(cube bool) {
-	newP, _ := s.d.move(s.location, directions[s.facing], cube)
+	newP, rot := s.d.move(s.location, s.facing, cube)
 	c := s.d.valueAt(newP)
 	if c == '#' {
 		return
 	}
 	if c == '.' {
+		s.facing = rot
 		s.location = newP
 		s.history[newP] = s.facing
 		return
@@ -280,6 +270,9 @@ func run() error {
 	s := initSim(d)
 	s.runSteps(false)
 	fmt.Printf("Part 1: %d\n", 1000*(s.location.y+1)+4*(s.location.x+1)+s.facing)
+	s = initSim(d)
+	s.runSteps(true)
+	fmt.Printf("Part 2: %d\n", 1000*(s.location.y+1)+4*(s.location.x+1)+s.facing)
 	return nil
 }
 
